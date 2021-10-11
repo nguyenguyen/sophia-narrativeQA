@@ -2,6 +2,7 @@ from datasets import list_datasets, list_metrics, load_dataset, load_metric
 from time import time
 import re
 import string
+from copy import deepcopy
 
 
 RAW_DATA_DIR = '~/BKTeam/NarrativeQA/data/raw/'
@@ -16,6 +17,7 @@ RENAME_COLS = {'document.id': 'id',
                 'question.text': 'question_text',
                 'question.tokens': 'question_tokens'}
 REGEX_HTML_TAG = r'<[\w\/\s=\"\'\-\#\&\%\*\(\)\!\\\[\]\}\{\?\`\~.,;:]+>'
+REGEX_BOOK_END = r'end of (the|this)?\s?project gutenberg'
 
 
 def remove_html_tags(sentence):
@@ -86,6 +88,40 @@ def preprocess_movie(movie):
     return movie
 
 
+####################################################
+### Preprocessing BOOK data
+### - Removing empty lines
+### - Removing notes part like "<<this is electronic version...>>"
+### - Identifying start_tokens and end_tokens
+### - Keeping context from start_tokens to end_tokens
+####################################################
+def preprocess_book(book):
+    context = book['context_text']
+    
+    processed_context = ""
+    for line in context.split('\n'):
+        if line:
+            processed_context = processed_context + '\n' + line
+    processed_context = processed_context[1:]
+
+    flag = True
+    while flag:
+        idx1 = processed_context.find("<<THIS ELECTRONIC VERSION ")
+        if idx1 != -1:
+            idx2 = processed_context.find("FOR MEMBERSHIP.>>")
+            processed_context = processed_context[:idx1] + processed_context[idx2+17:]
+        else: 
+            flag = False
+
+    context_lowercase = deepcopy(processed_context).lower()
+    end_tokens = re.search(REGEX_BOOK_END, context_lowercase)
+    if end_tokens:
+        end_idx = context_lowercase.find(end_tokens.group(), round(len(context_lowercase)/2))
+        processed_context = processed_context[:end_idx]
+    book['context_text'] = processed_context
+    return book
+
+
 if __name__ == '__main__':
     start_time = time() 
 
@@ -97,14 +133,17 @@ if __name__ == '__main__':
 
     print("\n\nSTEP 3: Preprocessing MOVIE data...")
     movie_data = cleaned_data.filter(lambda row: row['kind']=='movie')
-    movie_data = movie_data.select([0,55])
+    # movie_data = movie_data.select([0,55])
     print(f"Movie data length: {len(movie_data)} rows")
-    processed_movie_data = movie_data.map(preprocess_movie)
+    # processed_movie_data = movie_data.map(preprocess_movie)
 
     print("\n\nSTEP 4: Preprocessing BOOK data...")
     book_data = cleaned_data.filter(lambda row: row['kind']=='gutenberg')
     print(f"Book data length: {len(book_data)} rows")
-
+    # book_data = book_data.select([6721])
+    processed_book_data = book_data.map(preprocess_book)
+    # print(processed_book_data[0]['context_text'][-100:])
+    # print("-------------------------")
 
     wasted_seconds= round(time()-start_time)
     wasted_minutes = round((time()-start_time)/60)
