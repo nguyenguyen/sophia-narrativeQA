@@ -1,6 +1,7 @@
 ## Open-Domain Question Answering over Long Narratives
-###Researcher: _Nguyễn Võ Thùy Trang_
-###Professor: _Quản Thành Thơ_
+
+### Researcher: _Nguyễn Võ Thùy Trang_
+### Professor: _Quản Thành Thơ_
 
 
 **Dataset:**  NarrativeQA
