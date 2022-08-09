@@ -1,5 +1,5 @@
 # Open-Domain Question Answering over Long Narratives
-
+<br />
 
 ### Researcher: _Nguyễn Võ Thùy Trang_
 ### Professor: _Quản Thành Thơ_
